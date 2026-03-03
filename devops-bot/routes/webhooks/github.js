@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   validateGitHubSignature,
+  persistDeployEvent,
   sendWebhookEmbed,
   logWebhookSummary,
   formatCommitShort,
@@ -146,6 +147,14 @@ function createGitHubWebhookRouter(client) {
             channelName: process.env.DEPLOY_LOGS_CHANNEL_NAME || 'deploy-logs',
             embed,
             pingRoleName: isFailed ? (process.env.DEVOPS_ROLE_NAME || 'DevOps') : undefined
+          });
+
+          await persistDeployEvent({
+            service: 'GitHub',
+            status: isFailed ? 'Failure' : 'Success',
+            branch: getWorkflowBranch(payload),
+            project: repoName,
+            timestamp: payload.workflow_run?.updated_at ? new Date(payload.workflow_run.updated_at) : new Date()
           });
 
           await logWebhookSummary(

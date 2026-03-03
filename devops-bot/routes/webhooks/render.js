@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   validateRenderSignature,
+  persistDeployEvent,
   sendWebhookEmbed,
   logWebhookSummary,
   formatCommitShort,
@@ -29,7 +30,8 @@ function extractRenderData(payload) {
     commitId: deploy.commit?.id || deploy.commitId || payload?.commitId || 'N/A',
     commitMessage: deploy.commit?.message || payload?.commitMessage || 'N/A',
     deployUrl: deploy.url || deploy.dashboardUrl || payload?.url || null,
-    triggeredBy: deploy.trigger?.name || payload?.triggeredBy || 'Render'
+    triggeredBy: deploy.trigger?.name || payload?.triggeredBy || 'Render',
+    completedAt: deploy.finishedAt || deploy.updatedAt || payload?.createdAt || null
   };
 }
 
@@ -90,6 +92,16 @@ function createRenderWebhookRouter(client) {
         embed,
         pingRoleName: isFailed ? (process.env.DEVOPS_ROLE_NAME || 'DevOps') : undefined
       });
+
+      if (isSucceeded || isFailed) {
+        await persistDeployEvent({
+          service: 'Render',
+          status: isSucceeded ? 'Success' : 'Failure',
+          branch: data.environment,
+          project: data.serviceName,
+          timestamp: data.completedAt ? new Date(data.completedAt) : new Date()
+        });
+      }
 
       await logWebhookSummary(client, `Render deploy event processed: ${eventType} (${data.serviceName}).`);
 

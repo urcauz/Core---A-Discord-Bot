@@ -7,7 +7,9 @@ const ACTIONS = Object.freeze({
   ASSIGN_BUG: 'ASSIGN_BUG',
   MOVE_BUG: 'MOVE_BUG',
   SUBMIT_STANDUP: 'SUBMIT_STANDUP',
-  VIEW_STANDUP_SUMMARY: 'VIEW_STANDUP_SUMMARY'
+  VIEW_STANDUP_SUMMARY: 'VIEW_STANDUP_SUMMARY',
+  VIEW_ANALYTICS_OVERVIEW: 'VIEW_ANALYTICS_OVERVIEW',
+  VIEW_ANALYTICS_DETAILED: 'VIEW_ANALYTICS_DETAILED'
 });
 
 const DEFAULT_ROLE_MAP = Object.freeze({
@@ -19,7 +21,9 @@ const DEFAULT_ROLE_MAP = Object.freeze({
   ASSIGN_BUG: ['Founder', 'Lead Developer', 'QA'],
   MOVE_BUG: ['Founder', 'Lead Developer', 'QA'],
   SUBMIT_STANDUP: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
-  VIEW_STANDUP_SUMMARY: ['Founder', 'Lead Developer']
+  VIEW_STANDUP_SUMMARY: ['Founder', 'Lead Developer'],
+  VIEW_ANALYTICS_OVERVIEW: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
+  VIEW_ANALYTICS_DETAILED: ['Founder', 'Lead Developer']
 });
 
 function parseRoleList(value) {

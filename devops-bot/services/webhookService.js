@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { buildWebhookEmbed, webhookColorByState } = require('../utils/embedBuilder');
 const { logTaskAction } = require('./logService');
+const { DeployEvent } = require('../models/DeployEvent');
 
 function safeCompare(a, b) {
   const aBuffer = Buffer.from(String(a || ''), 'utf8');
@@ -59,6 +60,22 @@ function validateVercelSignature(rawBody, headers, secret) {
   }
 
   return false;
+}
+
+async function persistDeployEvent({ service, status, branch, project, timestamp }) {
+  if (!service || !status) return;
+
+  try {
+    await DeployEvent.create({
+      service,
+      status,
+      branch: branch || 'N/A',
+      project: project || 'N/A',
+      timestamp: timestamp || new Date()
+    });
+  } catch (error) {
+    console.error('[webhookService] Failed to persist deploy event:', error);
+  }
 }
 
 async function getPrimaryGuild(client) {
@@ -170,6 +187,7 @@ module.exports = {
   validateGitHubSignature,
   validateRenderSignature,
   validateVercelSignature,
+  persistDeployEvent,
   sendWebhookEmbed,
   logWebhookSummary,
   formatCommitShort,

@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   validateVercelSignature,
+  persistDeployEvent,
   sendWebhookEmbed,
   logWebhookSummary,
   formatCommitShort,
@@ -63,6 +64,7 @@ function createVercelWebhookRouter(client) {
       ? `https://${payload.url.replace(/^https?:\/\//, '')}`
       : payload?.deployment?.url || null;
     const triggeredBy = payload?.creator?.username || payload?.user?.username || 'Vercel';
+    const completedAt = payload?.readyStateAt || payload?.createdAt || payload?.deployment?.createdAt || null;
 
     console.log(`[webhook/vercel] Event received with state: ${state}`);
 
@@ -98,6 +100,14 @@ function createVercelWebhookRouter(client) {
         channelName: process.env.DEPLOY_LOGS_CHANNEL_NAME || 'deploy-logs',
         embed,
         pingRoleName: isError ? (process.env.DEVOPS_ROLE_NAME || 'DevOps') : undefined
+      });
+
+      await persistDeployEvent({
+        service: 'Vercel',
+        status: isReady ? 'Success' : 'Failure',
+        branch: environment,
+        project: projectName,
+        timestamp: completedAt ? new Date(completedAt) : new Date()
       });
 
       await logWebhookSummary(

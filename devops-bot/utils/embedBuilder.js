@@ -18,6 +18,14 @@ function truncateTitle(title, max = 45) {
   return `${title.slice(0, max - 3)}...`;
 }
 
+function toPercentString(value) {
+  return `${Number(value || 0).toFixed(2)}%`;
+}
+
+function toUserLabel(userId) {
+  return /^\d+$/.test(String(userId || '')) ? `<@${userId}>` : 'Unassigned';
+}
+
 function buildTaskEmbed(task) {
   return new EmbedBuilder()
     .setTitle(`Task #${task.taskId}: ${task.title}`)
@@ -227,6 +235,117 @@ function buildStandupWeeklySummaryEmbed(summary) {
     .setTimestamp(new Date());
 }
 
+function buildAnalyticsOverviewEmbed(stats) {
+  return new EmbedBuilder()
+    .setTitle('CORE Weekly Overview')
+    .setColor(0x2b87ff)
+    .addFields(
+      { name: 'Timeframe', value: stats.range.label, inline: false },
+      { name: 'Tasks Created', value: String(stats.tasksCreated), inline: true },
+      { name: 'Tasks Completed', value: String(stats.tasksCompleted), inline: true },
+      { name: 'Bugs Reported', value: String(stats.bugsReported), inline: true },
+      { name: 'Bugs Fixed', value: String(stats.bugsFixed), inline: true },
+      { name: 'Deployment Success Rate', value: toPercentString(stats.deploymentSuccessRate), inline: true },
+      { name: 'Standup Submission Rate', value: toPercentString(stats.standupSubmissionRate), inline: true }
+    )
+    .setFooter({ text: 'Computed from live MongoDB aggregates' })
+    .setTimestamp();
+}
+
+function buildAnalyticsTasksEmbed(stats) {
+  const statusText = Object.keys(stats.statusBreakdown).length
+    ? Object.entries(stats.statusBreakdown)
+        .map(([status, count]) => `${status}: ${count}`)
+        .join('\n')
+    : 'No task data for this timeframe.';
+
+  const contributorsText = stats.topContributors.length
+    ? stats.topContributors.map((item) => `${toUserLabel(item.userId)}: ${item.completedTasks}`).join('\n')
+    : 'No completed tasks in this timeframe.';
+
+  return new EmbedBuilder()
+    .setTitle('Task Analytics')
+    .setColor(0x2b87ff)
+    .addFields(
+      { name: 'Timeframe', value: stats.range.label, inline: false },
+      { name: 'Tasks per Status', value: clamp(statusText, 1024), inline: false },
+      { name: 'Top 5 Contributors', value: clamp(contributorsText, 1024), inline: false },
+      { name: 'Average Completion Time', value: `${stats.averageCompletionHours.toFixed(2)} hours`, inline: false }
+    )
+    .setFooter({ text: 'Computed from live MongoDB aggregates' })
+    .setTimestamp();
+}
+
+function buildAnalyticsBugsEmbed(stats) {
+  const severityText = Object.keys(stats.severityBreakdown).length
+    ? Object.entries(stats.severityBreakdown)
+        .map(([severity, count]) => `${severity}: ${count}`)
+        .join('\n')
+    : 'No bug data for this timeframe.';
+
+  const threshold = Number(process.env.CRITICAL_BUG_ALERT_THRESHOLD || 5);
+  const color = stats.criticalBugCount > threshold ? 0xdc3545 : 0x2b87ff;
+
+  return new EmbedBuilder()
+    .setTitle('Bug Analytics')
+    .setColor(color)
+    .addFields(
+      { name: 'Timeframe', value: stats.range.label, inline: false },
+      { name: 'Bugs by Severity', value: clamp(severityText, 1024), inline: false },
+      { name: 'Average Resolution Time', value: `${stats.averageResolutionHours.toFixed(2)} hours`, inline: true },
+      { name: 'Critical Bug Count', value: String(stats.criticalBugCount), inline: true },
+      {
+        name: 'Open vs Closed Ratio',
+        value: `Open: ${stats.openClosedRatio.open} | Closed: ${stats.openClosedRatio.closed}`,
+        inline: false
+      }
+    )
+    .setFooter({ text: 'Computed from live MongoDB aggregates' })
+    .setTimestamp();
+}
+
+function buildAnalyticsStandupsEmbed(stats) {
+  const consistentText = stats.mostConsistentContributors.length
+    ? stats.mostConsistentContributors
+        .map((item) => `${toUserLabel(item.userId)}: ${item.submissions}`)
+        .join('\n')
+    : 'No submissions in this timeframe.';
+
+  return new EmbedBuilder()
+    .setTitle('Standup Analytics')
+    .setColor(0x2b87ff)
+    .addFields(
+      { name: 'Timeframe', value: stats.range.label, inline: false },
+      { name: 'Submission Rate', value: toPercentString(stats.submissionRate), inline: true },
+      { name: 'Dev Team Size', value: String(stats.devTeamSize), inline: true },
+      { name: 'Total Blockers Reported', value: String(stats.blockersReported), inline: true },
+      { name: 'Most Consistent Contributors', value: clamp(consistentText, 1024), inline: false },
+      { name: 'Missed Standup Count', value: String(stats.missedStandups), inline: false }
+    )
+    .setFooter({ text: 'Computed from live MongoDB aggregates' })
+    .setTimestamp();
+}
+
+function buildAnalyticsDeploymentsEmbed(stats) {
+  let color = 0x2b87ff;
+  if (stats.failureRate > 20) {
+    color = stats.failureRate > 40 ? 0xdc3545 : 0xfd7e14;
+  }
+
+  return new EmbedBuilder()
+    .setTitle('Deployment Analytics')
+    .setColor(color)
+    .addFields(
+      { name: 'Timeframe', value: stats.range.label, inline: false },
+      { name: 'Total Deployments', value: String(stats.totalDeployments), inline: true },
+      { name: 'Success Rate', value: toPercentString(stats.successRate), inline: true },
+      { name: 'Failure Count', value: String(stats.failureCount), inline: true },
+      { name: 'Most Deployed Project', value: stats.mostDeployedProject || 'N/A', inline: false }
+    )
+    .setFooter({ text: 'Computed from live MongoDB aggregates' })
+    .setTimestamp();
+}
+
 function colorByStatus(status) {
   switch (status) {
     case 'Backlog':
@@ -252,6 +371,11 @@ module.exports = {
   buildDailyStandupEmbed,
   buildStandupWeeklySummaryEmbed,
   buildWebhookEmbed,
+  buildAnalyticsOverviewEmbed,
+  buildAnalyticsTasksEmbed,
+  buildAnalyticsBugsEmbed,
+  buildAnalyticsStandupsEmbed,
+  buildAnalyticsDeploymentsEmbed,
   bugSeverityColor,
   webhookColorByState,
   formatDate,
