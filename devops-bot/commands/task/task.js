@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { TASK_STATUSES, TASK_PRIORITIES } = require('../../models/Task');
 const {
   createTask,
@@ -120,11 +120,14 @@ module.exports = {
     const member = interaction.member;
 
     try {
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      }
+
       if (subcommand === 'create') {
         if (!checkPermission(member, ACTIONS.CREATE_TASK)) {
-          return interaction.reply({
-            content: 'You do not have permission to create tasks.',
-            ephemeral: true
+          return interaction.editReply({
+            content: 'You do not have permission to create tasks.'
           });
         }
 
@@ -138,17 +141,15 @@ module.exports = {
           deadline: parseDeadline(interaction.options.getString('deadline'))
         });
 
-        return interaction.reply({
-          content: `Task #${task.taskId} created successfully.`,
-          ephemeral: true
+        return interaction.editReply({
+          content: `Task #${task.taskId} created successfully.`
         });
       }
 
       if (subcommand === 'assign') {
         if (!checkPermission(member, ACTIONS.ASSIGN_TASK)) {
-          return interaction.reply({
-            content: 'You do not have permission to assign tasks.',
-            ephemeral: true
+          return interaction.editReply({
+            content: 'You do not have permission to assign tasks.'
           });
         }
 
@@ -159,17 +160,15 @@ module.exports = {
           actorId: interaction.user.id
         });
 
-        return interaction.reply({
-          content: `Task #${task.taskId} assigned to <@${task.assignedTo}>.`,
-          ephemeral: true
+        return interaction.editReply({
+          content: `Task #${task.taskId} assigned to <@${task.assignedTo}>.`
         });
       }
 
       if (subcommand === 'move') {
         if (!checkPermission(member, ACTIONS.MOVE_TASK)) {
-          return interaction.reply({
-            content: 'You do not have permission to move tasks.',
-            ephemeral: true
+          return interaction.editReply({
+            content: 'You do not have permission to move tasks.'
           });
         }
 
@@ -180,17 +179,15 @@ module.exports = {
           actorId: interaction.user.id
         });
 
-        return interaction.reply({
-          content: `Task #${task.taskId} moved to **${task.status}**.`,
-          ephemeral: true
+        return interaction.editReply({
+          content: `Task #${task.taskId} moved to **${task.status}**.`
         });
       }
 
       if (subcommand === 'update') {
         if (!checkPermission(member, ACTIONS.CREATE_TASK)) {
-          return interaction.reply({
-            content: 'You do not have permission to update tasks.',
-            ephemeral: true
+          return interaction.editReply({
+            content: 'You do not have permission to update tasks.'
           });
         }
 
@@ -207,9 +204,8 @@ module.exports = {
           }
         });
 
-        return interaction.reply({
-          content: `Task #${task.taskId} updated successfully.`,
-          ephemeral: true
+        return interaction.editReply({
+          content: `Task #${task.taskId} updated successfully.`
         });
       }
 
@@ -228,23 +224,21 @@ module.exports = {
           pageSize: 5
         });
 
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [
             buildTaskListEmbed(result.tasks, result.page, result.totalPages, {
               mine,
               status,
               project
             })
-          ],
-          ephemeral: true
+          ]
         });
       }
 
       if (subcommand === 'archive') {
         if (!checkPermission(member, ACTIONS.ARCHIVE_TASK)) {
-          return interaction.reply({
-            content: 'Only Founder or Lead Developer can archive tasks.',
-            ephemeral: true
+          return interaction.editReply({
+            content: 'Only Founder or Lead Developer can archive tasks.'
           });
         }
 
@@ -254,25 +248,23 @@ module.exports = {
           actorId: interaction.user.id
         });
 
-        return interaction.reply({
-          content: `Task #${task.taskId} archived successfully.`,
-          ephemeral: true
+        return interaction.editReply({
+          content: `Task #${task.taskId} archived successfully.`
         });
       }
 
-      return interaction.reply({ content: 'Unknown subcommand.', ephemeral: true });
+      return interaction.editReply({ content: 'Unknown subcommand.' });
     } catch (error) {
       console.error(`[task command] ${subcommand} failed:`, error);
       if (interaction.replied || interaction.deferred) {
-        return interaction.followUp({
-          content: `Request failed: ${error.message}`,
-          ephemeral: true
+        return interaction.editReply({
+          content: `Request failed: ${error.message}`
         });
       }
 
       return interaction.reply({
         content: `Request failed: ${error.message}`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   }

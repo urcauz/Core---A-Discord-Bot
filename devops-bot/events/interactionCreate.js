@@ -1,3 +1,5 @@
+const { MessageFlags } = require('discord.js');
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
@@ -13,13 +15,17 @@ module.exports = {
 
       const payload = {
         content: 'An unexpected error occurred while running this command.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       };
 
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(payload);
-      } else {
-        await interaction.reply(payload);
+      try {
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp(payload);
+        } else {
+          await interaction.reply(payload);
+        }
+      } catch (replyError) {
+        console.error('[interactionCreate] Failed to send error response:', replyError);
       }
     }
   }

@@ -27,7 +27,7 @@ async function registerSlashCommands(client) {
 }
 
 module.exports = {
-  name: 'ready',
+  name: 'clientReady',
   once: true,
   async execute(client) {
     console.log(`[ready] Logged in as ${client.user.tag}.`);
