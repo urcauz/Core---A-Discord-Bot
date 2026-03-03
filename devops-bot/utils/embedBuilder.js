@@ -1,5 +1,11 @@
 const { EmbedBuilder } = require('discord.js');
 
+function clamp(value, max) {
+  const normalized = String(value ?? 'N/A');
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max - 3)}...`;
+}
+
 function formatDate(date) {
   if (!date) return 'Not set';
   const timestamp = Math.floor(new Date(date).getTime() / 1000);
@@ -72,6 +78,63 @@ function bugSeverityColor(severity) {
   }
 }
 
+function webhookColorByState(state) {
+  switch (state) {
+    case 'success':
+      return 0x198754;
+    case 'failure':
+      return 0xdc3545;
+    case 'in_progress':
+      return 0x0d6efd;
+    case 'pr_opened':
+      return 0x6f42c1;
+    default:
+      return 0x2b87ff;
+  }
+}
+
+function buildWebhookEmbed({
+  title,
+  color,
+  eventType,
+  service,
+  project,
+  branch,
+  commit,
+  triggeredBy,
+  url,
+  extraFields
+}) {
+  const embed = new EmbedBuilder()
+    .setTitle(title || 'Webhook Event')
+    .setColor(color || 0x2b87ff)
+    .addFields(
+      { name: 'Event Type', value: clamp(eventType, 1024), inline: true },
+      { name: 'Service', value: clamp(service, 1024), inline: true },
+      { name: 'Project', value: clamp(project, 1024), inline: true },
+      { name: 'Branch', value: clamp(branch, 1024), inline: true },
+      { name: 'Commit', value: clamp(commit, 1024), inline: true },
+      { name: 'Triggered By', value: clamp(triggeredBy, 1024), inline: true }
+    )
+    .setTimestamp(new Date());
+
+  if (url) {
+    embed.addFields({ name: 'Link', value: clamp(url, 1024), inline: false });
+  }
+
+  if (Array.isArray(extraFields) && extraFields.length) {
+    embed.addFields(
+      extraFields.map((field) => ({
+        name: clamp(field?.name || 'Details', 256),
+        value: clamp(field?.value, 1024),
+        inline: Boolean(field?.inline)
+      }))
+    );
+  }
+
+  return embed;
+}
+
 function buildBugEmbed(bug) {
   return new EmbedBuilder()
     .setTitle(`Bug #${bug.bugId}: ${bug.title}`)
@@ -140,7 +203,9 @@ module.exports = {
   buildTaskListEmbed,
   buildBugEmbed,
   buildBugListEmbed,
+  buildWebhookEmbed,
   bugSeverityColor,
+  webhookColorByState,
   formatDate,
   truncateTitle
 };

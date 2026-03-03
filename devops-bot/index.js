@@ -6,6 +6,9 @@ const { Client, Collection, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 
 const { createHealthRouter } = require('./routes/health');
+const { createGitHubWebhookRouter } = require('./routes/webhooks/github');
+const { createRenderWebhookRouter } = require('./routes/webhooks/render');
+const { createVercelWebhookRouter } = require('./routes/webhooks/vercel');
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -67,15 +70,18 @@ async function connectDatabase() {
 
 async function startExpress(client) {
   const app = express();
-  app.use(express.json());
 
+  app.use('/webhook/github', createGitHubWebhookRouter(client));
+  app.use('/webhook/render', createRenderWebhookRouter(client));
+  app.use('/webhook/vercel', createVercelWebhookRouter(client));
+
+  app.use(express.json());
   app.use('/health', createHealthRouter(client));
-  app.use('/webhooks', express.Router());
 
   const port = Number(process.env.PORT) || 3000;
   await new Promise((resolve) => {
-    app.listen(port, () => {
-      console.log(`[express] Listening on port ${port}.`);
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`[express] Listening on 0.0.0.0:${port}.`);
       resolve();
     });
   });
