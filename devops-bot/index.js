@@ -9,6 +9,7 @@ const { createHealthRouter } = require('./routes/health');
 const { createGitHubWebhookRouter } = require('./routes/webhooks/github');
 const { createRenderWebhookRouter } = require('./routes/webhooks/render');
 const { createVercelWebhookRouter } = require('./routes/webhooks/vercel');
+const { initializeStandupAutomation } = require('./services/standupService');
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -102,6 +103,7 @@ async function startBot() {
 
   loadCommands(client);
   loadEvents(client);
+  initializeStandupAutomation(client);
 
   await connectDatabase();
   await startExpress(client);

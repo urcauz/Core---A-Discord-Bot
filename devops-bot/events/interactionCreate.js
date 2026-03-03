@@ -4,6 +4,26 @@ module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
     if (interaction.isModalSubmit()) {
+      const standupCommand = client.commands.get('standup');
+      if (standupCommand?.isStandupModal?.(interaction)) {
+        try {
+          await standupCommand.handleModalSubmit(interaction);
+        } catch (error) {
+          console.error('[interactionCreate] Standup modal handling failed:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            try {
+              await interaction.reply({
+                content: 'An unexpected error occurred while processing the standup submission.',
+                flags: MessageFlags.Ephemeral
+              });
+            } catch (replyError) {
+              console.error('[interactionCreate] Failed to send standup modal error response:', replyError);
+            }
+          }
+        }
+        return;
+      }
+
       const bugCommand = client.commands.get('bug');
       if (bugCommand?.isBugModal?.(interaction)) {
         try {

@@ -181,6 +181,52 @@ function buildBugListEmbed(bugs, page, totalPages, filters = {}) {
     .setTimestamp();
 }
 
+function buildDailyStandupEmbed(date) {
+  return new EmbedBuilder()
+    .setTitle(`Daily Standup — ${date}`)
+    .setColor(0x0d6efd)
+    .setDescription(
+      'Reply in this thread answering:\n\n' +
+      '• What did you complete yesterday?\n' +
+      '• What are you working on today?\n' +
+      '• Any blockers?'
+    )
+    .setTimestamp(new Date());
+}
+
+function buildStandupWeeklySummaryEmbed(summary) {
+  const range = summary?.dates?.length ? `${summary.dates[0]} to ${summary.dates[summary.dates.length - 1]}` : 'N/A';
+
+  const topContributors = summary?.topContributors?.length
+    ? summary.topContributors
+        .map((item) => `<@${item.userId}> (${item.submissions}/${summary.dates.length})`)
+        .join('\n')
+    : 'No submissions recorded.';
+
+  const missed = summary?.missedStandups?.length
+    ? summary.missedStandups
+        .map((item) => `<@${item.userId}> missed ${item.missedDays} day(s)`)
+        .join('\n')
+    : 'No missed standups this week.';
+
+  const blockers = summary?.stats?.length
+    ? summary.stats
+        .map((item) => `<@${item.userId}>: ${item.blockers}`)
+        .join('\n')
+    : 'No blocker data available.';
+
+  return new EmbedBuilder()
+    .setTitle('Weekly Standup Summary')
+    .setColor(0x0d6efd)
+    .addFields(
+      { name: 'Week Range', value: range, inline: false },
+      { name: 'Top Contributors', value: clamp(topContributors, 1024), inline: false },
+      { name: 'Users with Missed Standups', value: clamp(missed, 1024), inline: false },
+      { name: 'Blockers Reported', value: clamp(blockers, 1024), inline: false }
+    )
+    .setTimestamp(new Date());
+}
+
 function colorByStatus(status) {
   switch (status) {
     case 'Backlog':
@@ -203,6 +249,8 @@ module.exports = {
   buildTaskListEmbed,
   buildBugEmbed,
   buildBugListEmbed,
+  buildDailyStandupEmbed,
+  buildStandupWeeklySummaryEmbed,
   buildWebhookEmbed,
   bugSeverityColor,
   webhookColorByState,

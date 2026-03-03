@@ -5,7 +5,9 @@ const ACTIONS = Object.freeze({
   ARCHIVE_TASK: 'ARCHIVE_TASK',
   CREATE_BUG: 'CREATE_BUG',
   ASSIGN_BUG: 'ASSIGN_BUG',
-  MOVE_BUG: 'MOVE_BUG'
+  MOVE_BUG: 'MOVE_BUG',
+  SUBMIT_STANDUP: 'SUBMIT_STANDUP',
+  VIEW_STANDUP_SUMMARY: 'VIEW_STANDUP_SUMMARY'
 });
 
 const DEFAULT_ROLE_MAP = Object.freeze({
@@ -15,7 +17,9 @@ const DEFAULT_ROLE_MAP = Object.freeze({
   ARCHIVE_TASK: ['Founder', 'Lead Developer'],
   CREATE_BUG: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
   ASSIGN_BUG: ['Founder', 'Lead Developer', 'QA'],
-  MOVE_BUG: ['Founder', 'Lead Developer', 'QA']
+  MOVE_BUG: ['Founder', 'Lead Developer', 'QA'],
+  SUBMIT_STANDUP: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
+  VIEW_STANDUP_SUMMARY: ['Founder', 'Lead Developer']
 });
 
 function parseRoleList(value) {
@@ -49,5 +53,6 @@ function checkPermission(member, action) {
 
 module.exports = {
   ACTIONS,
-  checkPermission
+  checkPermission,
+  getAllowedRoleNames: resolveAllowedRoleNames
 };
