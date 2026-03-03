@@ -3,6 +3,7 @@ const { Bug } = require('../models/Bug');
 const { getNextSequence } = require('../utils/counter');
 const { buildBugEmbed, truncateTitle } = require('../utils/embedBuilder');
 const { logTaskAction } = require('./logService');
+const { emitDashboardUpdate } = require('../dashboard/socket');
 
 function findRoleByName(guild, roleName) {
   if (!roleName) return null;
@@ -117,6 +118,7 @@ async function createBug({
     guild,
     `🐞 Bug #${bug.bugId} reported by <@${reportedBy}> | Severity: **${bug.severity}** | Project: **${bug.project}**`
   );
+  emitDashboardUpdate('bug:reported', { bugId: bug.bugId, severity: bug.severity, project: bug.project });
 
   return { bug, threadCreated, threadError };
 }

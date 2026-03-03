@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> | CORE Dashboard</title>
+  <link rel="stylesheet" href="/public/css/dashboard.css" />
+</head>
+<body data-page="<%= activePage %>">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <h1>CORE Ops</h1>
+      <nav>
+        <a href="/dashboard" class="<%= activePage === 'dashboard' ? 'active' : '' %>">Dashboard</a>
+        <a href="/dashboard/tasks" class="<%= activePage === 'tasks' ? 'active' : '' %>">Tasks</a>
+        <a href="/dashboard/bugs" class="<%= activePage === 'bugs' ? 'active' : '' %>">Bugs</a>
+        <a href="/dashboard/deployments" class="<%= activePage === 'deployments' ? 'active' : '' %>">Deployments</a>
+        <a href="/dashboard/standups" class="<%= activePage === 'standups' ? 'active' : '' %>">Standups</a>
+      </nav>
+      <a class="logout" href="/logout">Logout</a>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <strong><%= user?.username %></strong>
+          <span><%= (user?.roles || []).join(', ') %></span>
+        </div>
+      </header>
+
+      <section class="page-content">
+        <%- include(bodyTemplate, bodyData || {}) %>
+      </section>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/public/js/dashboard.js"></script>
+</body>
+</html>

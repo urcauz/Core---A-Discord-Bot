@@ -9,7 +9,9 @@ const ACTIONS = Object.freeze({
   SUBMIT_STANDUP: 'SUBMIT_STANDUP',
   VIEW_STANDUP_SUMMARY: 'VIEW_STANDUP_SUMMARY',
   VIEW_ANALYTICS_OVERVIEW: 'VIEW_ANALYTICS_OVERVIEW',
-  VIEW_ANALYTICS_DETAILED: 'VIEW_ANALYTICS_DETAILED'
+  VIEW_ANALYTICS_DETAILED: 'VIEW_ANALYTICS_DETAILED',
+  VIEW_DASHBOARD: 'VIEW_DASHBOARD',
+  VIEW_DASHBOARD_API: 'VIEW_DASHBOARD_API'
 });
 
 const DEFAULT_ROLE_MAP = Object.freeze({
@@ -23,7 +25,9 @@ const DEFAULT_ROLE_MAP = Object.freeze({
   SUBMIT_STANDUP: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
   VIEW_STANDUP_SUMMARY: ['Founder', 'Lead Developer'],
   VIEW_ANALYTICS_OVERVIEW: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
-  VIEW_ANALYTICS_DETAILED: ['Founder', 'Lead Developer']
+  VIEW_ANALYTICS_DETAILED: ['Founder', 'Lead Developer'],
+  VIEW_DASHBOARD: ['Founder', 'Lead Developer'],
+  VIEW_DASHBOARD_API: ['Founder', 'Lead Developer']
 });
 
 function parseRoleList(value) {

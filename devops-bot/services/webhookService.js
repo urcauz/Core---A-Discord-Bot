@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { buildWebhookEmbed, webhookColorByState } = require('../utils/embedBuilder');
 const { logTaskAction } = require('./logService');
 const { DeployEvent } = require('../models/DeployEvent');
+const { emitDashboardUpdate } = require('../dashboard/socket');
 
 function safeCompare(a, b) {
   const aBuffer = Buffer.from(String(a || ''), 'utf8');
@@ -66,12 +67,18 @@ async function persistDeployEvent({ service, status, branch, project, timestamp 
   if (!service || !status) return;
 
   try {
-    await DeployEvent.create({
+    const event = await DeployEvent.create({
       service,
       status,
       branch: branch || 'N/A',
       project: project || 'N/A',
       timestamp: timestamp || new Date()
+    });
+    emitDashboardUpdate('deployment:logged', {
+      service: event.service,
+      status: event.status,
+      project: event.project,
+      branch: event.branch
     });
   } catch (error) {
     console.error('[webhookService] Failed to persist deploy event:', error);

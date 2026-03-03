@@ -3,6 +3,7 @@ const { Task } = require('../models/Task');
 const { getNextSequence } = require('../utils/counter');
 const { buildTaskEmbed, truncateTitle } = require('../utils/embedBuilder');
 const { logTaskAction } = require('./logService');
+const { emitDashboardUpdate } = require('../dashboard/socket');
 
 function getTaskBoardChannel(guild) {
   const boardChannelName = process.env.TASK_CHANNEL_NAME || 'project-tasks';
@@ -72,6 +73,7 @@ async function createTask({ guild, creatorId, title, description, project, prior
     guild,
     `🆕 Task #${task.taskId} created by <@${creatorId}> | Project: **${task.project}** | Priority: **${task.priority}**`
   );
+  emitDashboardUpdate('task:created', { taskId: task.taskId, status: task.status, project: task.project });
 
   return task;
 }

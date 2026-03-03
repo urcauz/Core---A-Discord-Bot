@@ -1,7 +1,12 @@
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const express = require('express');
+const session = require('express-session');
+const rateLimit = require('express-rate-limit');
+const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
+const { Server } = require('socket.io');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 
@@ -9,7 +14,14 @@ const { createHealthRouter } = require('./routes/health');
 const { createGitHubWebhookRouter } = require('./routes/webhooks/github');
 const { createRenderWebhookRouter } = require('./routes/webhooks/render');
 const { createVercelWebhookRouter } = require('./routes/webhooks/vercel');
+const { createDashboardRouter } = require('./routes/dashboard');
+const { createAnalyticsApiRouter } = require('./routes/api/analytics');
+const { createTasksApiRouter } = require('./routes/api/tasks');
+const { createBugsApiRouter } = require('./routes/api/bugs');
+const { createDeploymentsApiRouter } = require('./routes/api/deployments');
+const { createStandupsApiRouter } = require('./routes/api/standups');
 const { initializeStandupAutomation } = require('./services/standupService');
+const { initializeDashboardSocket } = require('./dashboard/socket');
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -69,19 +81,83 @@ async function connectDatabase() {
   console.log('[database] Connected to MongoDB.');
 }
 
+function createSessionMiddleware() {
+  const sessionSecret = requireEnv('SESSION_SECRET');
+  const mongoUri = requireEnv('MONGODB_URI');
+
+  return session({
+    name: 'core_dashboard.sid',
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    proxy: true,
+    store: MongoStore.create({
+      mongoUrl: mongoUri,
+      ttl: 60 * 60 * 8,
+      autoRemove: 'native'
+    }),
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 8
+    }
+  });
+}
+
 async function startExpress(client) {
   const app = express();
+  const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: true,
+      credentials: true
+    }
+  });
+
+  initializeDashboardSocket(io);
+
+  app.set('trust proxy', 1);
+  app.set('view engine', 'ejs');
+  app.set('views', path.join(__dirname, 'views'));
 
   app.use('/webhook/github', createGitHubWebhookRouter(client));
   app.use('/webhook/render', createRenderWebhookRouter(client));
   app.use('/webhook/vercel', createVercelWebhookRouter(client));
 
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use('/public', express.static(path.join(__dirname, 'public')));
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 40,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 180,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+
+  const sessionMiddleware = createSessionMiddleware();
+  app.use(sessionMiddleware);
+
   app.use('/health', createHealthRouter(client));
+  app.use('/', authLimiter, createDashboardRouter());
+
+  app.use('/api/analytics', apiLimiter, createAnalyticsApiRouter(client));
+  app.use('/api/tasks', apiLimiter, createTasksApiRouter());
+  app.use('/api/bugs', apiLimiter, createBugsApiRouter());
+  app.use('/api/deployments', apiLimiter, createDeploymentsApiRouter());
+  app.use('/api/standups', apiLimiter, createStandupsApiRouter());
 
   const port = Number(process.env.PORT) || 3000;
   await new Promise((resolve) => {
-    app.listen(port, '0.0.0.0', () => {
+    server.listen(port, '0.0.0.0', () => {
       console.log(`[express] Listening on 0.0.0.0:${port}.`);
       resolve();
     });
@@ -91,6 +167,10 @@ async function startExpress(client) {
 async function startBot() {
   requireEnv('DISCORD_TOKEN');
   requireEnv('DISCORD_CLIENT_ID');
+  requireEnv('CLIENT_ID');
+  requireEnv('CLIENT_SECRET');
+  requireEnv('REDIRECT_URI');
+  requireEnv('SESSION_SECRET');
 
   const client = new Client({
     intents: [

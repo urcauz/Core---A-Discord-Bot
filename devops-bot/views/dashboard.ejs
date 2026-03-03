@@ -1,0 +1,8 @@
+<section>
+  <h2>Weekly Overview</h2>
+  <% if (typeof denied !== 'undefined' && denied) { %>
+    <p>Access denied.</p>
+  <% } else { %>
+    <div id="overview-cards" class="cards"></div>
+  <% } %>
+</section>
