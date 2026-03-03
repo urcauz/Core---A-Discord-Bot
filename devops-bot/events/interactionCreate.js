@@ -3,6 +3,28 @@ const { MessageFlags } = require('discord.js');
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
+    if (interaction.isModalSubmit()) {
+      const bugCommand = client.commands.get('bug');
+      if (bugCommand?.isBugModal?.(interaction)) {
+        try {
+          await bugCommand.handleModalSubmit(interaction);
+        } catch (error) {
+          console.error('[interactionCreate] Bug modal handling failed:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            try {
+              await interaction.reply({
+                content: 'An unexpected error occurred while processing the bug report.',
+                flags: MessageFlags.Ephemeral
+              });
+            } catch (replyError) {
+              console.error('[interactionCreate] Failed to send modal error response:', replyError);
+            }
+          }
+        }
+      }
+      return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);

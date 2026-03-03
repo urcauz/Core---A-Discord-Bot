@@ -2,14 +2,20 @@ const ACTIONS = Object.freeze({
   CREATE_TASK: 'CREATE_TASK',
   ASSIGN_TASK: 'ASSIGN_TASK',
   MOVE_TASK: 'MOVE_TASK',
-  ARCHIVE_TASK: 'ARCHIVE_TASK'
+  ARCHIVE_TASK: 'ARCHIVE_TASK',
+  CREATE_BUG: 'CREATE_BUG',
+  ASSIGN_BUG: 'ASSIGN_BUG',
+  MOVE_BUG: 'MOVE_BUG'
 });
 
 const DEFAULT_ROLE_MAP = Object.freeze({
   CREATE_TASK: ['Founder', 'Lead Developer'],
   ASSIGN_TASK: ['Founder', 'Lead Developer'],
   MOVE_TASK: ['Founder', 'Lead Developer'],
-  ARCHIVE_TASK: ['Founder', 'Lead Developer']
+  ARCHIVE_TASK: ['Founder', 'Lead Developer'],
+  CREATE_BUG: ['Founder', 'Lead Developer', 'QA', 'Developer', 'DevOps'],
+  ASSIGN_BUG: ['Founder', 'Lead Developer', 'QA'],
+  MOVE_BUG: ['Founder', 'Lead Developer', 'QA']
 });
 
 function parseRoleList(value) {

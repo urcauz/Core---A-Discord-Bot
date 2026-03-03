@@ -57,6 +57,67 @@ function buildTaskListEmbed(tasks, page, totalPages, filters = {}) {
     .setTimestamp();
 }
 
+function bugSeverityColor(severity) {
+  switch (severity) {
+    case 'Low':
+      return 0x198754;
+    case 'Medium':
+      return 0xffc107;
+    case 'High':
+      return 0xfd7e14;
+    case 'Critical':
+      return 0xdc3545;
+    default:
+      return 0x2b87ff;
+  }
+}
+
+function buildBugEmbed(bug) {
+  return new EmbedBuilder()
+    .setTitle(`Bug #${bug.bugId}: ${bug.title}`)
+    .setColor(bugSeverityColor(bug.severity))
+    .addFields(
+      { name: 'Bug ID', value: String(bug.bugId), inline: true },
+      { name: 'Project', value: bug.project || 'General', inline: true },
+      { name: 'Environment', value: bug.environment, inline: true },
+      { name: 'Severity', value: bug.severity, inline: true },
+      { name: 'Status', value: bug.status, inline: true },
+      { name: 'Reported By', value: `<@${bug.reportedBy}>`, inline: true },
+      { name: 'Steps to Reproduce', value: bug.stepsToReproduce || 'Not provided' },
+      { name: 'Expected Result', value: bug.expectedResult || 'Not provided' },
+      { name: 'Actual Result', value: bug.actualResult || 'Not provided' }
+    )
+    .setTimestamp(new Date(bug.createdAt || Date.now()));
+}
+
+function buildBugListEmbed(bugs, page, totalPages, filters = {}) {
+  const filterParts = [];
+  if (filters.mine) filterParts.push('Mine');
+  if (filters.severity) filterParts.push(`Severity: ${filters.severity}`);
+  if (filters.status) filterParts.push(`Status: ${filters.status}`);
+
+  const description = bugs.length
+    ? bugs
+        .map(
+          (bug) =>
+            `**#${bug.bugId}** • ${bug.title}\n` +
+            `Project: ${bug.project} | Severity: ${bug.severity} | Status: ${bug.status} | Assignee: ${bug.assignedTo ? `<@${bug.assignedTo}>` : 'Unassigned'}`
+        )
+        .join('\n\n')
+    : 'No bugs found for the selected filters.';
+
+  return new EmbedBuilder()
+    .setTitle('Bug List')
+    .setColor(0xe55300)
+    .setDescription(description)
+    .addFields({
+      name: 'Filters',
+      value: filterParts.length ? filterParts.join(' | ') : 'None'
+    })
+    .setFooter({ text: `Page ${page} of ${totalPages}` })
+    .setTimestamp();
+}
+
 function colorByStatus(status) {
   switch (status) {
     case 'Backlog':
@@ -77,6 +138,9 @@ function colorByStatus(status) {
 module.exports = {
   buildTaskEmbed,
   buildTaskListEmbed,
+  buildBugEmbed,
+  buildBugListEmbed,
+  bugSeverityColor,
   formatDate,
   truncateTitle
 };
